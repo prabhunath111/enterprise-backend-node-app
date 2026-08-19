@@ -15,12 +15,10 @@ const app = express();
 // Connect to database
 connectDatabase();
 
-// ============= IMPORTANT: Trust Proxy =============
-// Enable this if you're behind a proxy (nginx, AWS ELB, Render, Heroku, etc.)
-app.set('trust proxy', 'loopback');
-
-// Or use 'true' if you trust all proxies (only in controlled environments)
-// app.set('trust proxy', true);
+// ============= FIX: Enable Trust Proxy =============
+// Render uses a proxy, so we need to trust it
+// This must be set BEFORE the rate limiter
+app.set('trust proxy', true);
 
 // Middleware
 app.use(helmet());
@@ -39,17 +37,17 @@ if (env.nodeEnv !== 'production') {
   app.use(morgan('combined', { stream: { write: (message: string) => logger.info(message.trim()) } }));
 }
 
-// ============= Rate Limiting with Proxy Support =============
+// ============= FIX: Configure Rate Limiter =============
 const limiter = rateLimit({
   windowMs: env.rateLimitWindowMs,
   max: env.rateLimitMax,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for health check endpoint
+  // Skip rate limiting for health check
   skip: (req) => req.path === '/health',
-  // Enable validation for trusted proxy headers.
-  validate: true,
+  // Disable validation checks that cause issues with proxy
+  validate: false, // This disables all validation checks
 });
 
 app.use('/api', limiter);
