@@ -15,6 +15,13 @@ const app = express();
 // Connect to database
 connectDatabase();
 
+// ============= IMPORTANT: Trust Proxy =============
+// Enable this if you're behind a proxy (nginx, AWS ELB, Render, Heroku, etc.)
+app.set('trust proxy', 'loopback');
+
+// Or use 'true' if you trust all proxies (only in controlled environments)
+// app.set('trust proxy', true);
+
 // Middleware
 app.use(helmet());
 app.use(compression());
@@ -32,11 +39,17 @@ if (env.nodeEnv !== 'production') {
   app.use(morgan('combined', { stream: { write: (message: string) => logger.info(message.trim()) } }));
 }
 
-// Rate limiting
+// ============= Rate Limiting with Proxy Support =============
 const limiter = rateLimit({
   windowMs: env.rateLimitWindowMs,
   max: env.rateLimitMax,
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for health check endpoint
+  skip: (req) => req.path === '/health',
+  // Enable validation for trusted proxy headers.
+  validate: true,
 });
 
 app.use('/api', limiter);
@@ -61,6 +74,7 @@ const PORT = env.port;
 app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`Environment: ${env.nodeEnv}`);
+  logger.info(`Trust proxy: ${app.get('trust proxy')}`);
 });
 
 export default app;
