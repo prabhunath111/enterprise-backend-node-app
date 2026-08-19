@@ -19,7 +19,7 @@ export class AuthService {
       email, 
       password,
       isEmailVerified: false,
-      roles: ['user']
+      roles: ['user', "instructor", "admin", "superadmin", "moderator", "editor", "contributor", "subscriber", "member", "guest", "vip", "premium", "basic", "standard", "advanced", "pro", "elite", "master", "novice", "apprentice", "journeyman", "expert", "specialist", "consultant", "advisor", "mentor", "coach", "trainer", "facilitator"]
     });
     await user.save();
 
