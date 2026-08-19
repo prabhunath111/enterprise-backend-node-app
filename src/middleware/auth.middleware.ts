@@ -3,18 +3,14 @@ import { TokenService } from '../services/token.service';
 import { User } from '../models/User.model';
 import { ApiError } from '../utils/response';
 
-// Extend the Express Request interface properly
-export interface AuthRequest extends Request {
-  user?: any;
-}
-
+// No custom interface needed - use the built-in Request type directly
 export const authenticate = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Use req.headers directly (it exists on the base Request type)
+    // req.headers is available on the built-in Request type
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       throw new ApiError(401, 'Authentication required');
@@ -32,7 +28,8 @@ export const authenticate = async (
       throw new ApiError(401, 'User not found');
     }
 
-    req.user = user;
+    // Attach user to request using type assertion
+    (req as any).user = user;
     next();
   } catch (error) {
     next(error);
@@ -40,15 +37,15 @@ export const authenticate = async (
 };
 
 export const authorize = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const user = (req as any).user;
+    if (!user) {
       next(new ApiError(401, 'Authentication required'));
       return;
     }
 
-    // Check if user has required role
-    const userRole = req.user.roles && req.user.roles.length > 0 
-      ? req.user.roles[0] 
+    const userRole = user.roles && user.roles.length > 0 
+      ? user.roles[0] 
       : 'user';
       
     if (!roles.includes(userRole)) {
