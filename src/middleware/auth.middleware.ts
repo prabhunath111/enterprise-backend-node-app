@@ -1,8 +1,12 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { TokenService } from '../services/token.service';
 import { User } from '../models/User.model';
 import { ApiError } from '../utils/response';
-import { AuthRequest } from '../types';
+
+// Extend the Express Request interface properly
+export interface AuthRequest extends Request {
+  user?: any;
+}
 
 export const authenticate = async (
   req: AuthRequest,
@@ -10,6 +14,7 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Use req.headers directly (it exists on the base Request type)
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       throw new ApiError(401, 'Authentication required');
@@ -41,7 +46,11 @@ export const authorize = (...roles: string[]) => {
       return;
     }
 
-    const userRole = req.user.roles && req.user.roles[0] ? req.user.roles[0] : 'user';
+    // Check if user has required role
+    const userRole = req.user.roles && req.user.roles.length > 0 
+      ? req.user.roles[0] 
+      : 'user';
+      
     if (!roles.includes(userRole)) {
       next(new ApiError(403, 'Insufficient permissions'));
       return;
