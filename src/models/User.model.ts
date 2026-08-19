@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { env } from '../config/env';
+import { env } from '../config/env'; // Fix the import path
 
 export interface IUser extends Document {
   name: string;
@@ -70,6 +70,7 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+// Hash password before saving
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   
@@ -82,12 +83,14 @@ UserSchema.pre('save', async function (next) {
   }
 });
 
+// Compare password method
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Remove sensitive data when converting to JSON
 UserSchema.set('toJSON', {
   transform: function (doc, ret) {
     delete ret.password;

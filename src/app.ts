@@ -6,7 +6,6 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import { connectDatabase } from './config/database';
-import { errorHandler } from './middleware/error.middleware';
 import routes from './routes';
 import logger from './utils/logger';
 
@@ -27,18 +26,25 @@ process.on('unhandledRejection', (reason, promise) => {
 connectDatabase();
 
 // ============= Trust Proxy =============
-// Enable this for Render.com
 app.set('trust proxy', true);
 
-// Security middleware
-app.use(helmet());
-app.use(compression());
-
-// CORS
+// ============= CORS - Allow Everyone =============
 app.use(cors({
-  origin: env.corsOrigin.split(','),
+  origin: '*',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400,
 }));
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" },
+}));
+
+app.use(compression());
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -78,6 +84,9 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
+// Pre-flight requests (OPTIONS) handling
+app.options('*', cors());
+
 // Routes
 app.use('/api', routes);
 
@@ -115,8 +124,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Start server
-const PORT = env.port || 10000; // Render uses port 10000
+// ============= FIX: Start server with proper port type =============
+const PORT: number = parseInt(env.port as any, 10) || 10000;
 app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📦 Environment: ${env.nodeEnv}`);
