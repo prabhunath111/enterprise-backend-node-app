@@ -43,7 +43,7 @@ export class CourseService {
     ]);
 
     return {
-      courses,
+      courses: courses as ICourse[],
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -59,27 +59,31 @@ export class CourseService {
       throw new ApiError(404, 'Course not found');
     }
 
-    return course;
+    return course as ICourse;
   }
 
   // ============= GET POPULAR COURSES =============
   static async getPopularCourses(limit: number = 10): Promise<ICourse[]> {
-    return Course.find({ isPublished: true })
+    const courses = await Course.find({ isPublished: true })
       .sort({ students: -1, rating: -1 })
       .limit(limit)
       .populate('instructor', 'name email avatarUrl');
+
+    return courses as ICourse[];
   }
 
   // ============= GET COURSES BY CATEGORY =============
   static async getCoursesByCategory(category: string): Promise<ICourse[]> {
-    return Course.find({ category, isPublished: true })
+    const courses = await Course.find({ category, isPublished: true })
       .populate('instructor', 'name email avatarUrl')
       .sort({ createdAt: -1 });
+
+    return courses as ICourse[];
   }
 
   // ============= SEARCH COURSES =============
   static async searchCourses(query: string): Promise<ICourse[]> {
-    return Course.find(
+    const courses = await Course.find(
       {
         $text: { $search: query },
         isPublished: true,
@@ -91,6 +95,8 @@ export class CourseService {
       .sort({ score: { $meta: 'textScore' } })
       .populate('instructor', 'name email avatarUrl')
       .limit(20);
+
+    return courses as ICourse[];
   }
 
   // ============= ENROLL IN COURSE =============
@@ -130,7 +136,12 @@ export class CourseService {
       })
       .sort({ enrolledAt: -1 });
 
-    return enrollments.map(e => e.course).filter(c => c !== null) as ICourse[];
+    // Extract courses from enrollments and filter out null values
+    const courses = enrollments
+      .map(enrollment => (enrollment as any).course)
+      .filter(course => course !== null);
+
+    return courses as ICourse[];
   }
 
   // ============= GET COURSE PROGRESS =============
@@ -189,7 +200,7 @@ export class CourseService {
 
     await course.save();
     logger.info(`Course created by ${instructorId}: ${course.title}`);
-    return course;
+    return course as ICourse;
   }
 
   // ============= UPDATE COURSE (INSTRUCTOR) =============
@@ -210,7 +221,7 @@ export class CourseService {
     Object.assign(course, courseData);
     await course.save();
     logger.info(`Course updated: ${courseId}`);
-    return course;
+    return course as ICourse;
   }
 
   // ============= DELETE COURSE (INSTRUCTOR) =============
