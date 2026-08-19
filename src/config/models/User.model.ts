@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { env } from '../config/env';
+import { env } from '../env';
 
 export interface IUser extends Document {
   name: string;
