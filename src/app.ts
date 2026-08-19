@@ -124,8 +124,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// ============= FIX: Start server with proper port type =============
-const PORT: number = parseInt(env.port as any, 10) || 10000;
+// Start server
+const PORT: number = typeof env.port === 'number' ? env.port : parseInt(env.port as any, 10) || 10000;
 app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📦 Environment: ${env.nodeEnv}`);
